@@ -20,10 +20,13 @@ def getConfig():
 def createDriver():
 	options = Options()
 	options.add_experimental_option("detach", True)
+	options.add_argument("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
+	options.add_experimental_option('excludeSwitches', ['enable-logging', 'enable-automation'])
+	options.add_experimental_option("useAutomationExtension", False)
+	options.add_argument('--disable-blink-features=AutomationControlled')
 
 	# create driver
 	driver = webdriver.Chrome(options=options) 
-	driver.implicitly_wait(1)
 	return driver
 
 def login(driver, config):
@@ -39,8 +42,8 @@ def login(driver, config):
 def checkDate(driver):
 	targetDate = config.get('reservation', 'date')
 	targetTime = config.get('reservation', 'time')
-	date = datetime.strptime('2024-08-28', '%Y-%m-%d')
-	weekday = calendar.weekday(date.year, date.month, date.day) + 1;
+	date = datetime.strptime(targetDate, '%Y-%m-%d')
+	weekday = ((calendar.weekday(date.year, date.month, date.day) + 1) % 7) + 1
 	driver.execute_script(f"selectWrite('{targetDate}', '{targetTime}', 'false', '{weekday}');")
 
 def makeRequest(driver, config):
@@ -66,19 +69,23 @@ if __name__ == "__main__":
 	# go to page for reservation
 	driver.get('https://www.seongnam.go.kr/rent/rentParkDataCal.do?menuIdx=1001981&returnURL=%2Fmain.do')
 
+	# chanePark
+	driver.execute_script(f"changePark('13', '황새울공원');")
+	driver.find_element(By.XPATH, '//*[@id="listForm"]/div[1]/div/span/a').click();
+
 	# check date 
 	checkDate(driver)
 
-	# Agree to the usage
+	# # Agree to the usage
 	driver.find_element(By.ID, 'agree_yn').click()
 	driver.find_element(By.XPATH, '/html/body/div[2]/div[2]/div/div[2]/div[2]/form/div[4]/span[2]/a').click()
 
-	# Reservation request
+	# # Reservation request
 	makeRequest(driver, config)
 
-	## Agree to Usage
-	#driver.find_element(By.XPATH, '//*[@id="agree_yn"]').click()
-	driver.find_element(By.XPATH, '//*[@id="contents"]/div[4]/span[2]/a').click()
+	# ## Agree to Usage
+	# driver.find_element(By.XPATH, '//*[@id="agree_yn"]').click()
+	# driver.find_element(By.XPATH, '//*[@id="contents"]/div[4]/span[2]/a').click()
 
 	## alert
 	# wait = WebDriverWait(driver, 10)
