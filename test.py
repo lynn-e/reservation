@@ -1,6 +1,8 @@
 import calendar
 import configparser
 from datetime import datetime
+import os
+import time
 
 from selenium import webdriver
 
@@ -27,6 +29,9 @@ def createDriver():
 
 	# create driver
 	driver = webdriver.Chrome(options=options) 
+	driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": ["www.gstatic.com"]})
+	driver.refresh()
+
 	return driver
 
 def login(driver, config):
@@ -38,6 +43,18 @@ def login(driver, config):
 		driver.find_element(By.ID, 'loginBtn').click()
 	except KeyError as e:
 		raise e
+
+def changePark(driver, park):
+	if park == "황새울A":
+		driver.execute_script(f"changePark('13', '황새울공원');")
+		driver.execute_script(f"changeFaci('8', '풋살장A');")
+	elif park == "황새울B":
+		driver.execute_script(f"changePark('13', '황새울공원');")
+		driver.execute_script(f"changeFaci('9', '풋살장B');")
+	else:
+		driver.execute_script(f"changePark('10', '화랑공원');")
+
+	driver.find_element(By.XPATH, '//*[@id="listForm"]/div[1]/div/span/a').click();
 
 def checkDate(driver):
 	targetDate = config.get('reservation', 'date')
@@ -54,8 +71,10 @@ def makeRequest(driver, config):
 	driver.find_element(By.XPATH, '//*[@id="rent_ceo_nm"]').send_keys(config.get('reservation', 'ceo_nm'))
 	driver.find_element(By.XPATH, '//*[@id="rent_ceo_mobile2"]').send_keys(config.get('reservation', 'ceo_mobile').split('-')[1])
 	driver.find_element(By.XPATH, '//*[@id="rent_ceo_mobile3"]').send_keys(config.get('reservation', 'ceo_mobile').split('-')[2])
-	driver.find_element(By.XPATH, '//*[@id="uploadFile1"]').send_keys(config.get('reservation', 'trainingPlan'))
-	driver.find_element(By.XPATH, '//*[@id="uploadFile2"]').send_keys(config.get('reservation', 'participanList'))
+
+	current_directory = os.getcwd()
+	driver.find_element(By.XPATH, '//*[@id="uploadFile1"]').send_keys(f'{current_directory}/훈련계획서.hwp')
+	driver.find_element(By.XPATH, '//*[@id="uploadFile2"]').send_keys(f'{current_directory}/참가자명단.hwp')
 
 if __name__ == "__main__":
 
@@ -70,17 +89,21 @@ if __name__ == "__main__":
 	driver.get('https://www.seongnam.go.kr/rent/rentParkDataCal.do?menuIdx=1001981&returnURL=%2Fmain.do')
 
 	# chanePark
-	driver.execute_script(f"changePark('13', '황새울공원');")
-	driver.find_element(By.XPATH, '//*[@id="listForm"]/div[1]/div/span/a').click();
+	time.sleep(5)
+	changePark(driver, config.get('reservation', 'park'))
 
-	# check date 
+	# check date
+	time.sleep(5) 
 	checkDate(driver)
 
 	# # Agree to the usage
+	time.sleep(5)
 	driver.find_element(By.ID, 'agree_yn').click()
+	time.sleep(5)
 	driver.find_element(By.XPATH, '/html/body/div[2]/div[2]/div/div[2]/div[2]/form/div[4]/span[2]/a').click()
 
 	# # Reservation request
+	time.sleep(5)
 	makeRequest(driver, config)
 
 	# ## Agree to Usage
